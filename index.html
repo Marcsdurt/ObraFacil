@@ -4,11 +4,13 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
 <title>ObraFácil</title>
-<link rel="icon" type="image/x-icon" href="icons/favicon.ico">
-<link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16x16.png">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32x32.png">
-<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
-<link rel="manifest" href="icons/site.webmanifest">
+<meta name="theme-color" content="#C8531A"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="ObraFácil"/>
+<link rel="manifest" id="pwaManifest"/>
+<link rel="apple-touch-icon" id="appleIcon"/>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -822,6 +824,77 @@ function showToast(msg,type){
   t.textContent=msg;t.className='toast show'+(type?' '+type:'');
   clearTimeout(_tt);_tt=setTimeout(()=>t.className='toast',2800);
 }
+</script>
+
+<script>
+/* ── PWA SETUP ── */
+(function(){
+  function makeIcon(size){
+    const c=document.createElement('canvas');
+    c.width=c.height=size;
+    const ctx=c.getContext('2d');
+    const r=size*0.22;
+    ctx.fillStyle='#C8531A';
+    ctx.beginPath();
+    ctx.moveTo(r,0);ctx.lineTo(size-r,0);ctx.quadraticCurveTo(size,0,size,r);
+    ctx.lineTo(size,size-r);ctx.quadraticCurveTo(size,size,size-r,size);
+    ctx.lineTo(r,size);ctx.quadraticCurveTo(0,size,0,size-r);
+    ctx.lineTo(0,r);ctx.quadraticCurveTo(0,0,r,0);
+    ctx.closePath();ctx.fill();
+    const fs=size*0.52;
+    ctx.fillStyle='#fff';
+    ctx.font='700 '+fs+'px sans-serif';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('O',size/2,size/2+size*0.03);
+    ctx.fillStyle='rgba(255,255,255,0.35)';
+    ctx.beginPath();
+    ctx.arc(size*0.64,size*0.36,size*0.09,0,Math.PI*2);
+    ctx.fill();
+    return c.toDataURL('image/png');
+  }
+
+  function injectManifest(icon192,icon512){
+    const manifest={
+      name:'ObraFácil',
+      short_name:'ObraFácil',
+      description:'Gerador de orçamentos para obras e reformas',
+      start_url:'.',
+      display:'standalone',
+      orientation:'portrait',
+      background_color:'#F5F3EE',
+      theme_color:'#C8531A',
+      icons:[
+        {src:icon192,sizes:'192x192',type:'image/png',purpose:'any maskable'},
+        {src:icon512,sizes:'512x512',type:'image/png',purpose:'any maskable'}
+      ]
+    };
+    const blob=new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'});
+    document.getElementById('pwaManifest').href=URL.createObjectURL(blob);
+    document.getElementById('appleIcon').href=icon192;
+    // Also set favicon
+    const lnk=document.createElement('link');
+    lnk.rel='icon';lnk.type='image/png';lnk.href=icon192;
+    document.head.appendChild(lnk);
+  }
+
+  function registerSW(){
+    const sw=`const CACHE='obrafacil-v1';
+self.addEventListener('install',e=>{e.waitUntil(self.skipWaiting());});
+self.addEventListener('activate',e=>{e.waitUntil(self.clients.claim());});
+self.addEventListener('fetch',e=>{e.respondWith(fetch(e.request).catch(()=>new Response('Offline')));});`;
+    const blob=new Blob([sw],{type:'application/javascript'});
+    navigator.serviceWorker.register(URL.createObjectURL(blob),{scope:'./'}).catch(()=>{});
+  }
+
+  window.addEventListener('load',()=>{
+    try{
+      const i192=makeIcon(192);
+      const i512=makeIcon(512);
+      injectManifest(i192,i512);
+      if('serviceWorker' in navigator) registerSW();
+    }catch(e){console.warn('PWA setup error',e);}
+  });
+})();
 </script>
 </body>
 </html>
